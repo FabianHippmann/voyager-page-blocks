@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Pvtl\VoyagerFrontend\Helpers\ClassEvents;
 use Pvtl\VoyagerFrontend\Helpers\BladeCompiler;
+use Pvtl\VoyagerPageBlocks\Http\Resources\BlockResource;
 
 trait Blocks
 {
@@ -23,12 +24,12 @@ trait Blocks
     {
         return array_map(function ($block) {
             // 'Include' block types
-            if ($block->type === 'include' && !empty($block->path)) {
+            if ($block->type === 'include' && ! empty($block->path)) {
                 $block->html = ClassEvents::executeClass($block->path)->render();
             }
 
             // 'Template' block types
-            if ($block->type === 'template' && !empty($block->template)) {
+            if ($block->type === 'template' && ! empty($block->template)) {
                 $block = $this->prepareTemplateBlockTypes($block);
             }
 
@@ -40,9 +41,10 @@ trait Blocks
             if (empty($ttl) && app('env') != 'local') {
                 $ttl = 1;
             }
-            return Cache::remember($cacheKey, $ttl, function () use ($block) {
-                return $block;
-            });
+            return $block;
+        // return Cache::remember($cacheKey, $ttl, function () use ($block) {
+            //     return $block;
+            // });
         }, $blocks->toArray());
     }
 
@@ -52,8 +54,8 @@ trait Blocks
      * + compile each piece of HTML (eg. for short codes)
      *
      * @param $block
-     * @return mixed
      * @throws \Exception
+     * @return mixed
      */
     protected function prepareTemplateBlockTypes($block)
     {
@@ -62,22 +64,28 @@ trait Blocks
 
         // Ensure every key from config exists in collection
         foreach ((array)$templateConfig['fields'] as $fieldName => $fieldConfig) {
-            if (!array_key_exists($fieldName, $block->data)) {
+            if (! array_key_exists($fieldName, $block->data)) {
                 $block->data->$fieldName = null;
             }
         }
+        $resourceClass = $templateConfig['resource'] ? $templateConfig['resource'] : BlockResource::class;
+
+
+        $resource = (new $resourceClass((array) $block->data))->toArray();
+
+        $block->data = $resource;
 
         // Compile each piece of content from the DB, into HTML
-        foreach ($block->data as $key => $data) {
-            $block->data->$key = BladeCompiler::getHtmlFromString($data);
-        }
+        // foreach ($block->data as $key => $data) {
+        //     $block->data->$key = BladeCompiler::getHtmlFromString($data);
+        // }
 
         // Compile the Blade View to give us HTML output
-        if (View::exists($block->template)) {
-            $block->html = View::make($block->template, [
-                'blockData' => $block->data,
-            ])->render();
-        }
+        // if (View::exists($block->template)) {
+        //     $block->html = View::make($block->template, [
+        //         'blockData' => $block->data,
+        //     ])->render();
+        // }
 
         return $block;
     }

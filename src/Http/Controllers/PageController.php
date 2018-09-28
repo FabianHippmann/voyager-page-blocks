@@ -5,8 +5,10 @@ namespace Pvtl\VoyagerPageBlocks\Http\Controllers;
 use Pvtl\VoyagerPageBlocks\Page;
 use Illuminate\Support\Facades\View;
 use Pvtl\VoyagerPageBlocks\Traits\Blocks;
+use Pvtl\VoyagerPageBlocks\Http\Controllers\Controller;
+use Pvtl\VoyagerPageBlocks\Http\Resources\PageResource;
 
-class PageController extends \Pvtl\VoyagerFrontend\Http\Controllers\PageController
+class PageController extends Controller
 {
     use Blocks;
 
@@ -19,6 +21,7 @@ class PageController extends \Pvtl\VoyagerFrontend\Http\Controllers\PageControll
      */
     public function getPage($slug = 'home')
     {
+        $request = request();
         $page = Page::where('slug', '=', $slug)->firstOrFail();
         $blocks = $page->blocks()
             ->where('is_hidden', '=', '0')
@@ -38,23 +41,20 @@ class PageController extends \Pvtl\VoyagerFrontend\Http\Controllers\PageControll
             });
 
         // Override standard body content, with page block content
-        $page['body'] = view('voyager-page-blocks::default', [
-            'page' => $page,
+        $page['body'] = [
             'blocks' => $this->prepareEachBlock($blocks),
-        ]);
+        ];
 
         // Check that the page Layout and its View exists
         if (empty($page->layout)) {
             $page->layout = 'default';
         }
-        if (!View::exists("{$this->viewPath}::layouts.{$page->layout}")) {
+        if (! View::exists("{$this->viewPath}::layouts.{$page->layout}")) {
             $page->layout = 'default';
         }
-
-        // Return the full page
-        return view("{$this->viewPath}::modules.pages.default", [
+        return $this->makeResponse($request, "{$this->viewPath}::modules.pages.default", [
             'page' => $page,
             'layout' => $page->layout,
-        ]);
+        ], (new PageResource($page)));
     }
 }
