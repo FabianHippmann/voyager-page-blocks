@@ -68,7 +68,7 @@ trait Blocks
                 $block->data->$fieldName = null;
             }
         }
-        $resourceClass = $templateConfig['resource'] ? $templateConfig['resource'] : BlockResource::class;
+        $resourceClass = array_get($templateConfig, 'resource') ? $templateConfig['resource'] : BlockResource::class;
 
 
         $resource = (new $resourceClass((array) $block->data))->toArray();
