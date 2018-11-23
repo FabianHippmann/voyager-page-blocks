@@ -2,16 +2,22 @@
 
 namespace Pvtl\VoyagerPageBlocks\Http\Controllers;
 
-use Pvtl\VoyagerPageBlocks\Page;
 use Illuminate\Support\Facades\View;
 use Pvtl\VoyagerPageBlocks\Traits\Blocks;
 use Pvtl\VoyagerPageBlocks\Http\Controllers\Controller;
-use Pvtl\VoyagerPageBlocks\Http\Resources\PageResource;
 
 class PageController extends Controller
 {
     use Blocks;
 
+    protected $pageModel;
+    protected $pageResource;
+
+    public function __construct()
+    {
+        $this->pageModel = config('pages.model');
+        $this->pageResource = config('pages.resources.page');
+    }
     /**
      * Fetch all pages and their associated blocks
      *
@@ -22,7 +28,8 @@ class PageController extends Controller
     public function getPage($slug = 'home')
     {
         $request = request();
-        $page = Page::where('slug', '=', $slug)->firstOrFail();
+        $page = $this->pageModel::where('slug', '=', $slug)->firstOrFail();
+
         $blocks = $page->blocks()
             ->where('is_hidden', '=', '0')
             ->orderBy('order', 'asc')
@@ -52,9 +59,10 @@ class PageController extends Controller
         if (! View::exists("{$this->viewPath}::layouts.{$page->layout}")) {
             $page->layout = 'default';
         }
+        $configClass = $this->pageResource;
         return $this->makeResponse($request, "{$this->viewPath}::modules.pages.default", [
             'page' => $page,
             'layout' => $page->layout,
-        ], (new PageResource($page)));
+        ], (new $configClass($page)));
     }
 }

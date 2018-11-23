@@ -15,10 +15,11 @@ class CardColumnsResource extends BlockResource
                 break;
             }
             $data[] = [
-                 "type" => "CMSCard",
-                 "image" => publicAssetUrl($this->data["image_{$col}"]),
-                 "title" => $this->data["title_{$col}"],
-                 "subline" => $this->data["content_{$col}"]
+                "type" => "CMSCard",
+                "image" => publicAssetUrl($this->data["image_{$col}"]),
+                "title" => $this->data["title_{$col}"],
+                "link" => array_get($this->data, "link_{$col}", null),
+                "subline" => $this->data["content_{$col}"]
             ];
         }
         return ["type" => "CMSWrapper", "data" => $data];
